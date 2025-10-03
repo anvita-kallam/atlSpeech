@@ -29,6 +29,7 @@ class ARIMAForecaster:
         self.df = None
         self.forecast_results = {}
         self.model_evaluations = {}
+        self.model_diagnostics = []
         
     def load_and_prepare_data(self):
         """Load and prepare the data for forecasting."""
@@ -200,6 +201,51 @@ class ARIMAForecaster:
         print(f"2023: {forecast[0]:.2f} (CI: {forecast_ci[0, 0]:.2f} - {forecast_ci[0, 1]:.2f})")
         print(f"2024: {forecast[1]:.2f} (CI: {forecast_ci[1, 0]:.2f} - {forecast_ci[1, 1]:.2f})")
         
+        # In-sample diagnostics (fit on training window)
+        try:
+            fitted_values = best_model.fittedvalues
+            # Align lengths if differencing reduced length
+            fitted_values = pd.Series(fitted_values).dropna()
+            y_true = pd.Series(series[-len(fitted_values):])
+            insample_mae = mean_absolute_error(y_true, fitted_values)
+            insample_rmse = np.sqrt(mean_squared_error(y_true, fitted_values))
+            # Avoid division by zero for MAPE
+            with np.errstate(divide='ignore', invalid='ignore'):
+                insample_mape = np.nanmean(np.abs((y_true - fitted_values) / y_true)) * 100
+        except Exception:
+            insample_mae = np.nan
+            insample_rmse = np.nan
+            insample_mape = np.nan
+
+        # Extract coefficient estimates and standard errors
+        try:
+            params_series = best_model.params
+            bse_series = best_model.bse
+            params_dict = {f"coef_{k}": float(v) for k, v in params_series.items()}
+            bse_dict = {f"se_{k}": float(v) for k, v in bse_series.items()}
+        except Exception:
+            params_dict = {}
+            bse_dict = {}
+
+        diag_record = {
+            'State': state_name,
+            'Metric': metric_col,
+            'ARIMA_Params': str(best_params),
+            'AIC': float(best_model.aic) if hasattr(best_model, 'aic') else np.nan,
+            'BIC': float(best_model.bic) if hasattr(best_model, 'bic') else np.nan,
+            'LogLikelihood': float(best_model.llf) if hasattr(best_model, 'llf') else np.nan,
+            'NumObs': int(getattr(best_model, 'nobs', len(series))),
+            'InSample_MAE': insample_mae,
+            'InSample_RMSE': insample_rmse,
+            'InSample_MAPE': insample_mape,
+            'Is_Stationary': is_stationary
+        }
+
+        # Merge parameter and stderr dicts into the diagnostics record
+        diag_record.update(params_dict)
+        diag_record.update(bse_dict)
+        self.model_diagnostics.append(diag_record)
+
         # Store results
         result = {
             'state': state_name,
@@ -369,11 +415,29 @@ class ARIMAForecaster:
             summary_file = os.path.join(output_dir, f"arima_forecast_summary_{timestamp}.csv")
             summary_df.to_csv(summary_file, index=False)
             print(f"Summary statistics saved to: {summary_file}")
+
+        # Save model diagnostics (coefficients and errors)
+        diagnostics_file = None
+        if len(self.model_diagnostics) > 0:
+            diagnostics_df = pd.DataFrame(self.model_diagnostics)
+            # Order columns for readability
+            base_cols = [
+                'State', 'Metric', 'ARIMA_Params', 'AIC', 'BIC', 'LogLikelihood',
+                'NumObs', 'InSample_MAE', 'InSample_RMSE', 'InSample_MAPE', 'Is_Stationary'
+            ]
+            coef_cols = sorted([c for c in diagnostics_df.columns if c.startswith('coef_')])
+            se_cols = sorted([c for c in diagnostics_df.columns if c.startswith('se_')])
+            ordered_cols = base_cols + coef_cols + se_cols
+            diagnostics_df = diagnostics_df[[c for c in ordered_cols if c in diagnostics_df.columns]]
+            diagnostics_file = os.path.join(output_dir, f"arima_model_diagnostics_{timestamp}.csv")
+            diagnostics_df.to_csv(diagnostics_file, index=False)
+            print(f"Model diagnostics saved to: {diagnostics_file}")
         
         return {
             'detailed_forecasts': forecast_file if forecast_df is not None else None,
             'original_format': original_file if original_format_df is not None else None,
-            'summary': summary_file if summary_df is not None else None
+            'summary': summary_file if summary_df is not None else None,
+            'diagnostics': diagnostics_file
         }
 
 def main():
