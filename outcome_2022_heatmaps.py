@@ -49,7 +49,25 @@ METRICS = {
 }
 
 
-def create_heatmap_for_metric(df, metric, metric_info):
+def get_unified_scale_range(df):
+    """Get the unified scale range across all metrics for 2022."""
+    df_2022 = df[df['Year'] == 2022].copy()
+    df_2022 = df_2022[df_2022['State (rank)'].notna()].copy()
+    
+    min_val = float('inf')
+    max_val = float('-inf')
+    
+    for metric in METRICS.keys():
+        df_2022[metric] = pd.to_numeric(df_2022[metric], errors='coerce')
+        metric_data = df_2022[df_2022[metric].notna()][metric]
+        if len(metric_data) > 0:
+            min_val = min(min_val, metric_data.min())
+            max_val = max(max_val, metric_data.max())
+    
+    return min_val, max_val
+
+
+def create_heatmap_for_metric(df, metric, metric_info, color_range=None):
     """Create a single choropleth map for a specific metric."""
     
     # Filter for 2022 data and clean
@@ -70,7 +88,7 @@ def create_heatmap_for_metric(df, metric, metric_info):
         print(f"No data available for {metric} in 2022")
         return None
     
-    # Create choropleth with reversed color scale
+    # Create choropleth with reversed color scale and unified range
     fig = px.choropleth(
         df_metric,
         locations="state_abbr",
@@ -81,7 +99,8 @@ def create_heatmap_for_metric(df, metric, metric_info):
         hover_name="State (rank)",
         hover_data={metric: ':.1f'},
         title=metric_info['title'],
-        labels={metric: 'Percentage'}
+        labels={metric: 'Percentage'},
+        range_color=color_range  # Use unified color range
     )
     
     # Update layout
@@ -93,7 +112,7 @@ def create_heatmap_for_metric(df, metric, metric_info):
     return fig
 
 
-def create_combined_heatmap(df):
+def create_combined_heatmap(df, color_range):
     """Create a combined subplot showing all three metrics."""
     
     # Filter for 2022 data
@@ -113,7 +132,7 @@ def create_combined_heatmap(df):
         specs=[[{"type": "choropleth"}, {"type": "choropleth"}, {"type": "choropleth"}]]
     )
     
-    # Add each metric as a subplot
+    # Add each metric as a subplot with unified color range
     for i, (metric, metric_info) in enumerate(METRICS.items(), 1):
         df_metric = df_2022[df_2022[metric].notna()].copy()
         
@@ -124,6 +143,8 @@ def create_combined_heatmap(df):
                     z=df_metric[metric],
                     locationmode='USA-states',
                     colorscale=metric_info['color_scale'] + '_r',  # Add _r to reverse the scale
+                    zmin=color_range[0],  # Set unified min
+                    zmax=color_range[1],  # Set unified max
                     showscale=True if i == 3 else False,
                     colorbar=dict(x=1.02) if i == 3 else None,
                     hovertemplate=f"<b>%{{location}}</b><br>{metric}: %{{z:.1f}}%<extra></extra>"
@@ -150,12 +171,17 @@ def main():
     # Clean column names
     df.columns = df.columns.str.strip()
     
+    # Get unified color scale range across all metrics
+    print("Calculating unified color scale range...")
+    color_range = get_unified_scale_range(df)
+    print(f"Unified color range: {color_range[0]:.1f} - {color_range[1]:.1f}")
+    
     print("Creating individual heatmaps...")
     
     # Create individual heatmaps for each metric
     for metric, metric_info in METRICS.items():
         print(f"Creating heatmap for {metric}...")
-        fig = create_heatmap_for_metric(df, metric, metric_info)
+        fig = create_heatmap_for_metric(df, metric, metric_info, color_range)
         
         if fig:
             # Save HTML
@@ -174,7 +200,7 @@ def main():
     print("Creating combined heatmap...")
     
     # Create combined heatmap
-    combined_fig = create_combined_heatmap(df)
+    combined_fig = create_combined_heatmap(df, color_range)
     
     if combined_fig:
         # Save combined HTML
