@@ -70,23 +70,19 @@ def create_heatmap_for_metric(df, metric, metric_info):
         print(f"No data available for {metric} in 2022")
         return None
     
-    # Create choropleth
+    # Create choropleth with reversed color scale
     fig = px.choropleth(
         df_metric,
         locations="state_abbr",
         locationmode="USA-states",
         color=metric,
-        color_continuous_scale=metric_info['color_scale'],
+        color_continuous_scale=metric_info['color_scale'] + '_r',  # Add _r to reverse the scale
         scope="usa",
         hover_name="State (rank)",
         hover_data={metric: ':.1f'},
         title=metric_info['title'],
-        labels={metric: 'Percentage'},
-        color_continuous_midpoint=None
+        labels={metric: 'Percentage'}
     )
-    
-    # Reverse the color scale so darker = higher percentage
-    fig.update_traces(reversescale=True)
     
     # Update layout
     fig.update_layout(
@@ -127,8 +123,7 @@ def create_combined_heatmap(df):
                     locations=df_metric['state_abbr'],
                     z=df_metric[metric],
                     locationmode='USA-states',
-                    colorscale=metric_info['color_scale'],
-                    reversescale=True,  # Reverse scale so darker = higher percentage
+                    colorscale=metric_info['color_scale'] + '_r',  # Add _r to reverse the scale
                     showscale=True if i == 3 else False,
                     colorbar=dict(x=1.02) if i == 3 else None,
                     hovertemplate=f"<b>%{{location}}</b><br>{metric}: %{{z:.1f}}%<extra></extra>"
