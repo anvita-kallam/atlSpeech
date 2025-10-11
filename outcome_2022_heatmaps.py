@@ -81,8 +81,12 @@ def create_heatmap_for_metric(df, metric, metric_info):
         hover_name="State (rank)",
         hover_data={metric: ':.1f'},
         title=metric_info['title'],
-        labels={metric: 'Percentage'}
+        labels={metric: 'Percentage'},
+        color_continuous_midpoint=None
     )
+    
+    # Reverse the color scale so darker = higher percentage
+    fig.update_traces(reversescale=True)
     
     # Update layout
     fig.update_layout(
@@ -124,6 +128,7 @@ def create_combined_heatmap(df):
                     z=df_metric[metric],
                     locationmode='USA-states',
                     colorscale=metric_info['color_scale'],
+                    reversescale=True,  # Reverse scale so darker = higher percentage
                     showscale=True if i == 3 else False,
                     colorbar=dict(x=1.02) if i == 3 else None,
                     hovertemplate=f"<b>%{{location}}</b><br>{metric}: %{{z:.1f}}%<extra></extra>"
