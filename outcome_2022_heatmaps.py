@@ -38,12 +38,12 @@ METRICS = {
     },
     '% meeting 3': {
         'title': 'Percentage Meeting Outcome 3 (2022)', 
-        'color_scale': 'Plasma',
+        'color_scale': 'Viridis',
         'filename': 'outcome3_2022_heatmap'
     },
     '% meeting 6': {
         'title': 'Percentage Meeting Outcome 6 (2022)',
-        'color_scale': 'Inferno',
+        'color_scale': 'Viridis',
         'filename': 'outcome6_2022_heatmap'
     }
 }
