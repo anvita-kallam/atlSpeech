@@ -40,11 +40,6 @@ METRICS = {
         'title': 'Percentage Meeting Outcome 3 (2022)', 
         'color_scale': 'Viridis',
         'filename': 'outcome3_2022_heatmap'
-    },
-    '% meeting 6': {
-        'title': 'Percentage Meeting Outcome 6 (2022)',
-        'color_scale': 'Viridis',
-        'filename': 'outcome6_2022_heatmap'
     }
 }
 
@@ -127,9 +122,9 @@ def create_combined_heatmap(df, color_range):
     
     # Create subplots
     fig = make_subplots(
-        rows=1, cols=3,
+        rows=1, cols=2,
         subplot_titles=list(METRICS.keys()),
-        specs=[[{"type": "choropleth"}, {"type": "choropleth"}, {"type": "choropleth"}]]
+        specs=[[{"type": "choropleth"}, {"type": "choropleth"}]]
     )
     
     # Add each metric as a subplot with unified color range
@@ -145,8 +140,8 @@ def create_combined_heatmap(df, color_range):
                     colorscale=metric_info['color_scale'] + '_r',  # Add _r to reverse the scale
                     zmin=color_range[0],  # Set unified min
                     zmax=color_range[1],  # Set unified max
-                    showscale=True if i == 3 else False,
-                    colorbar=dict(x=1.02) if i == 3 else None,
+                    showscale=True if i == 2 else False,
+                    colorbar=dict(x=1.02) if i == 2 else None,
                     hovertemplate=f"<b>%{{location}}</b><br>{metric}: %{{z:.1f}}%<extra></extra>"
                 ),
                 row=1, col=i
@@ -154,7 +149,7 @@ def create_combined_heatmap(df, color_range):
     
     # Update layout
     fig.update_layout(
-        title_text="2022 Child Outcome Metrics by State",
+        title_text="2022 Child Outcome Metrics 1 & 3 by State",
         title_x=0.5,
         geo=dict(scope='usa'),
         margin=dict(l=0, r=0, t=80, b=0),
@@ -204,14 +199,14 @@ def main():
     
     if combined_fig:
         # Save combined HTML
-        combined_html = os.path.join(OUTPUT_DIR, "all_outcomes_2022_heatmap.html")
+        combined_html = os.path.join(OUTPUT_DIR, "outcomes_1_3_2022_heatmap.html")
         combined_fig.write_html(combined_html, include_plotlyjs="cdn")
         print(f"Saved combined HTML: {combined_html}")
         
         # Save combined PNG
-        combined_png = os.path.join(OUTPUT_DIR, "all_outcomes_2022_heatmap.png")
+        combined_png = os.path.join(OUTPUT_DIR, "outcomes_1_3_2022_heatmap.png")
         try:
-            combined_fig.write_image(combined_png, scale=2, width=1500, height=600)
+            combined_fig.write_image(combined_png, scale=2, width=1200, height=600)
             print(f"Saved combined PNG: {combined_png}")
         except Exception as e:
             print(f"Combined PNG save failed: {e}")
