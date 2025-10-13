@@ -402,7 +402,7 @@ class ARIMAForecaster:
             forecast_df.to_csv(forecast_file, index=False)
             print(f"Detailed forecasts saved to: {forecast_file}")
         
-        # Save forecast in original format
+        # Save forecasts in original format
         original_format_df = self.create_original_format_forecast()
         if original_format_df is not None:
             original_file = os.path.join(output_dir, f"arima_forecasts_original_format_{timestamp}.csv")
