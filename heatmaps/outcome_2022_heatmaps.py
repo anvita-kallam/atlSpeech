@@ -45,21 +45,9 @@ METRICS = {
 
 
 def get_unified_scale_range(df):
-    """Get the unified scale range across all metrics for 2022."""
-    df_2022 = df[df['Year'] == 2022].copy()
-    df_2022 = df_2022[df_2022['State (rank)'].notna()].copy()
-    
-    min_val = float('inf')
-    max_val = float('-inf')
-    
-    for metric in METRICS.keys():
-        df_2022[metric] = pd.to_numeric(df_2022[metric], errors='coerce')
-        metric_data = df_2022[df_2022[metric].notna()][metric]
-        if len(metric_data) > 0:
-            min_val = min(min_val, metric_data.min())
-            max_val = max(max_val, metric_data.max())
-    
-    return min_val, max_val
+    """Get the unified scale range fixed at 0-100 for all metrics."""
+    # Use fixed 0-100 scale for all heatmaps
+    return 0.0, 100.0
 
 
 def create_heatmap_for_metric(df, metric, metric_info, color_range=None):

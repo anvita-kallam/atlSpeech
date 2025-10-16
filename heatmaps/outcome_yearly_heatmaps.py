@@ -52,22 +52,9 @@ YEARS = [2018, 2019, 2020, 2021, 2022]
 
 
 def get_unified_scale_range(df):
-    """Get the unified scale range across all metrics and years."""
-    min_val = float('inf')
-    max_val = float('-inf')
-    
-    for year in YEARS:
-        df_year = df[df['Year'] == year].copy()
-        df_year = df_year[df_year['State (rank)'].notna()].copy()
-        
-        for metric in METRICS.keys():
-            df_year[metric] = pd.to_numeric(df_year[metric], errors='coerce')
-            metric_data = df_year[df_year[metric].notna()][metric]
-            if len(metric_data) > 0:
-                min_val = min(min_val, metric_data.min())
-                max_val = max(max_val, metric_data.max())
-    
-    return min_val, max_val
+    """Get the unified scale range fixed at 0-100 for all metrics and years."""
+    # Use fixed 0-100 scale for all heatmaps
+    return 0.0, 100.0
 
 
 def create_heatmap_for_metric_year(df, metric, metric_info, year, color_range):
